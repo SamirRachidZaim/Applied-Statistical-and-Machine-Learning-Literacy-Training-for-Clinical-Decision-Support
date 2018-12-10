@@ -1,0 +1,149 @@
+---
+title: "Applied Probabilistic & Statistical Training For Clinical Decision Support"
+author: "Samir Rachid Zaim"
+date: "11/12/2018"
+header-includes:
+  - \usepackage{amsthm} 
+  - \usepackage{amsmath}
+
+output:
+  beamer_presentation:
+    slide_level: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## Probability Module: Table of Contents
+
+- What is probability? 
+- P-values
+- Random chance vs. Expected Value
+- Conditional Probability
+- Setting Risk Thresholds
+
+
+## Frequential v. Subjective Probability
+
+Frequential
+
+- The statistical probability concept
+- Ideal or truth in the universe, long-run frequency.
+- Follows a distribution (e.g., Normal, Binomial, Poisson, etc...)
+- Can be used to construct hypothesis tests and confidence intervals
+- Relies $\mathbf{purely}$ on observed data
+
+## Subjective
+
+- “The cure for Alzheimer’s disease will probably be discovered in the coming decade.”
+- "A politician may state that there is a fifty-fifty chance of winning the next election."
+
+Not grounded on actual data or theory but rather founded on [informed/uninformed] beliefs. 
+
+## Conditional Probability
+
+Formally, a $\mathbf{conditional}$ $\mathbf{probability}$ is the probability of A occurring given that B has already happened (or is present), denoted as Pr(A|B). 
+
+- In clinical trials, many times we get Pr(A), but in practice we would love Pr(A | my patient), where "|" is read as 'given'. 
+- Given my patient's profile, how effective is A? Pr(A | 'patient is african american') or Pr(A| 'patient has comorbidity X')?
+
+## Conditional Probability Example
+
+Given drug A, a clinician may be interested in its effectiveness across different demographics since she understands that trials have biases [1] and effectiveness may depend on varying doses across groups [2]. After collecting the data, now we can answer how effective for patient I given his background?
+
+```{r ,results='asis', message=F, warning=F, fig.height=3, fig.width=4}
+require(reshape2)
+treatmentData = data.frame(White=c(rep(1,32),rep(0,8)),
+                           Black=c(rep(1,20),rep(0,20)),
+                           Latino=c(rep(1,10),rep(0,30)),
+                           Asian=c(rep(1,36),rep(0,4)))
+test = melt(treatmentData)
+
+barplot(t(table(test)), beside=T, main='Treatment Survival by Group')
+#legend("topleft", c("Not survived","Survived"), fill = c("red","green"))
+```
+
+## Bayesian Statistics
+
+- Comes from Bayes' rule [and conditional probability], proposing an alternative way to conduct statistical analyses, where the probabilities of observed events are weighted by our prior knowledge in the subject area
+
+$$\text{Bayes' Rule:} \hspace{4mm} Pr(A|B) = \frac{Pr(B|A)Pr(A)}{Pr(B)}$$
+
+- Distributions are placed on parameters, rather than fixed values. 
+- Alternative framework to frequentist statistics
+- Incorporate a clinician's prior knowledge into analysis
+- Useful in small sample studies (e.g., clinical trials) or in rare diseases with small occurrences
+
+## Bayesian Probability Example 
+
+$\mathbf{Example}$
+
+Consider Treatment A, in the frequentist world, we say A is effective with 80% probability, and conduct a hypothesis test based on whether a novel treatment B is better than A. 
+
+$$H_0: Pr(A)=Pr(B) \hspace{5mm} H_A: Pr(A) < Pr(B)$$
+
+In the Bayesian framework, A is given a $\mathbf{prior}$ probability distribution to express our knowledge on its effectiveness. The choice of the prior is usually a conversation involving, what is its average, and how much confidence do we have in this average (i.e., tighter or wider distribution)
+
+## Bayesian Probability Example (2)
+
+If treatment A has indeed a mean of 80% effectiveness, then the next step is assessing how confident we are in this 80%. Are we '4-out-of-5' confident, '12-out-or-15' or '40-out-of-50'confident? 
+
+```{r}
+curve(dbeta(x, 40,10), ylab='Pr(X)',xlab='X')
+curve(dbeta(x, 12,3), ylab='Pr(X)',xlab='X', col='green',add=T)
+curve(dbeta(x, 4,1), ylab='Pr(X)',xlab='X', col='blue',add=T)
+
+abline(v=0.8, lty=2, lwd=2, col='red')
+legend('topleft', c("40-out-of-50","12-out-or-15", "4-out-of-5",'Frequentist Treatment Value'), col=c('black','green','blue','red'), lty=c(1,1,1,2))
+```
+
+## Interpreting P-values 
+In context of CDSS, p-values may be used to
+
+- suggest a drug prescription
+- inform of drug-drug interactions 
+- recommend dosage differences by gender,race, or ethnicity
+
+Since p-values are only interpretable in the context of the specific hypothesis being tested and in the context of signficance levels, the CDSS user must understand how the p-values are generated in order to determine whether there may be data quality issues or irregularities in CDSS outputs. 
+
+$$H_0: Pr(A)=Pr(B) \hspace{5mm} H_A: Pr(A) < Pr(B)$$
+
+
+## Probabilities, Risk Scores, & Thresholds
+
+In CDSS, high-risk flags are functions of the probability thresholds we set. Things to consider when setting thresholds:
+
+- different models calibrate probabilities differently 
+
+- raising or minimizing thresholds will affect the number of false positives alerts
+- operational capability should be factored into choice (i.e., lowering the threshold by .05 will increase the number of flags by 20%)
+- patient risk distribution can indicate clusters of patients and help set thresholds appropriately (based on past data)
+
+
+
+## Setting Thresholds
+
+```{r} 
+
+plot(rnorm(100, 3,1), runif(100, 0.4,1), col='red',pch=16, ylim=c(0,1), xlim=c(-2,6), xlab='Covariate X',ylab='Pr(Heart Attack|X)', main='Setting Probability Thresholds')
+points(rnorm(100, 3,1), runif(100, 0,.5), col='green',pch=17)
+abline(h=.4, lty=2, lwd=3, col='orange')
+abline(h=.6, lty=2, lwd=3, col='black')
+text(-1, .7, 'High Risk --> All TP',cex = 1.2, col='Red')
+text(-.8, .5, 'Medium Risk --> Mix of TP/FP', cex=1.2, col='Orange')
+text(-1, .2, 'Low Risk --> mostly FP', cex=1.2, col='green')
+
+legend('bottomright',c('Heart Attack','No Heart Attack'), fill=c('red','green'))
+legend('topleft',c('high risk','medium risk'), col=c('black','orange'), lty=2, lwd=2)
+
+```
+
+## References 
+
+[1] Rothwell, Peter M. "External validity of randomised controlled trials:“to whom do the results of this trial apply?”." The Lancet 365, no. 9453 (2005): 82-93.
+
+[2] Limdi, Nita A., Todd M. Brown, Qi Yan, Jonathan L. Thigpen, Aditi Shendre, Nianjun Liu, Charles E. Hill, Donna K. Arnett, and T. Mark Beasley. "Race influences warfarin dose changes associated with genetic factors." Blood (2015): blood-2015.
+
+
